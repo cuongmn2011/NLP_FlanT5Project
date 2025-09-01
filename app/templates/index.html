@@ -1,223 +1,247 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grammar Analysis from Audio</title>
+    <title>Phân tích Ngữ pháp Tiếng Anh</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 4px solid #3498db;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 text-gray-800">
 
-    <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8 space-y-6">
-        
-        <header class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900">Phân tích Ngữ pháp Tiếng Anh</h1>
-            <p class="text-gray-600 mt-2">Tải lên file audio hoặc ghi âm trực tiếp để bắt đầu.</p>
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Kiểm tra Ngữ pháp Tiếng Anh</h1>
+            <p class="text-lg text-gray-600 mt-2">Chuyển đổi giọng nói thành văn bản và nhận phân tích chi tiết.</p>
         </header>
 
-        <!-- Input Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div class="flex flex-col items-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
-                <label for="audio-file" class="cursor-pointer bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
-                    Chọn file Audio
-                </label>
-                <input type="file" id="audio-file" accept="audio/*" class="hidden">
-                <p id="file-name" class="mt-2 text-sm text-gray-500">Chưa chọn file nào</p>
+        <main class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <!-- Phần Input -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">1. Nhập liệu Âm thanh</h2>
+                <div class="grid md:grid-cols-2 gap-6 items-center">
+                    <!-- Ghi âm -->
+                    <div class="flex flex-col items-center p-4 border rounded-lg">
+                        <button id="recordButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full transition-transform transform hover:scale-105 w-full text-lg flex items-center justify-center space-x-2">
+                            <i class="fas fa-microphone"></i>
+                            <span>Bắt đầu Ghi âm</span>
+                        </button>
+                        <div id="recordingStatus" class="mt-3 text-sm text-gray-500 h-5 flex items-center"></div>
+                    </div>
+                    <!-- Tải file -->
+                    <div class="flex flex-col items-center p-4 border rounded-lg">
+                        <label for="fileInput" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition-transform transform hover:scale-105 w-full text-lg text-center cursor-pointer">
+                            <i class="fas fa-upload"></i>
+                            <span>Chọn File Audio</span>
+                        </label>
+                        <input type="file" id="fileInput" class="hidden" accept="audio/*">
+                        <p id="fileName" class="mt-3 text-sm text-gray-500 h-5"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phần Văn bản -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">2. Văn bản đã chuyển đổi</h2>
+                <textarea id="transcribedText" class="w-full p-4 border border-gray-300 rounded-lg h-40 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Văn bản từ audio sẽ xuất hiện ở đây..."></textarea>
+            </div>
+
+            <!-- Nút Phân tích -->
+            <div class="text-center mb-6">
+                <button id="analyzeButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-full text-xl transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100" disabled>
+                    <i class="fas fa-magic"></i>
+                    Phân tích
+                </button>
             </div>
             
-            <div class="flex flex-col items-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
-                <button id="record-btn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">Bắt đầu Ghi âm</button>
-                <p id="record-status" class="mt-2 text-sm text-gray-500">Nhấn để ghi âm</p>
-            </div>
-        </div>
+            <!-- Trạng thái xử lý -->
+            <div id="status" class="text-center text-gray-600 h-6 mb-4"></div>
 
-        <!-- Transcription Section -->
-        <div class="space-y-2">
-            <div class="flex justify-between items-center">
-                <label for="transcribed-text" class="font-semibold text-gray-700">Văn bản từ Audio (có thể chỉnh sửa):</label>
-                <div id="transcribe-loader" class="loader hidden"></div>
+            <!-- Kết quả -->
+            <div id="resultSection" class="hidden">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">3. Kết quả Phân tích</h2>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p id="correctedText" class="text-lg whitespace-pre-wrap"></p>
+                </div>
+                <div class="text-center mt-4">
+                    <button id="exportButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
+                        <i class="fas fa-download"></i>
+                        Xuất ra file .txt
+                    </button>
+                </div>
             </div>
-            <textarea id="transcribed-text" rows="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Nội dung audio sẽ hiện ở đây..."></textarea>
-        </div>
-
-        <!-- Action Button -->
-        <div class="text-center">
-            <button id="analyze-btn" class="w-full md:w-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors text-lg">
-                Phân tích Ngữ pháp
-            </button>
-        </div>
-
-        <!-- Result Section -->
-        <div class="space-y-2">
-            <div class="flex justify-between items-center">
-                <label for="corrected-text" class="font-semibold text-gray-700">Kết quả Phân tích:</label>
-                 <div id="correct-loader" class="loader hidden"></div>
-            </div>
-            <textarea id="corrected-text" rows="6" readonly class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"></textarea>
-            <button id="export-btn" class="mt-2 bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors hidden">Xuất ra file .txt</button>
-        </div>
+        </main>
     </div>
 
-<script>
-    const audioFileInput = document.getElementById('audio-file');
-    const fileNameDisplay = document.getElementById('file-name');
-    const transcribedTextarea = document.getElementById('transcribed-text');
-    const analyzeBtn = document.getElementById('analyze-btn');
-    const correctedTextarea = document.getElementById('corrected-text');
-    const exportBtn = document.getElementById('export-btn');
-    const transcribeLoader = document.getElementById('transcribe-loader');
-    const correctLoader = document.getElementById('correct-loader');
-    
-    // Recording functionality
-    const recordBtn = document.getElementById('record-btn');
-    const recordStatus = document.getElementById('record-status');
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
+    <script>
+        const recordButton = document.getElementById('recordButton');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const transcribedText = document.getElementById('transcribedText');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const status = document.getElementById('status');
+        const resultSection = document.getElementById('resultSection');
+        const correctedText = document.getElementById('correctedText');
+        const exportButton = document.getElementById('exportButton');
 
-    // --- Event Listeners ---
-    audioFileInput.addEventListener('change', () => {
-        const file = audioFileInput.files[0];
-        if (file) {
-            fileNameDisplay.textContent = file.name;
-            handleAudio(file);
-        }
-    });
+        let recorder;
+        let isRecording = false;
 
-    recordBtn.addEventListener('click', async () => {
-        if (isRecording) {
-            mediaRecorder.stop();
-        } else {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            
-            isRecording = true;
-            audioChunks = [];
-            recordBtn.textContent = 'Dừng Ghi âm';
-            recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
-            recordBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-            recordStatus.textContent = "Đang ghi âm...";
+        // Xử lý Ghi âm
+        recordButton.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
 
-            mediaRecorder.addEventListener("dataavailable", event => {
-                audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener("stop", () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioFile = new File([audioBlob], "recording.wav", { type: 'audio/wav' });
-                fileNameDisplay.textContent = "Bản ghi âm";
-                handleAudio(audioFile);
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorder = new MediaRecorder(stream);
                 
+                const chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                
+                recorder.onstop = () => {
+                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    const formData = new FormData();
+                    
+                    // SỬA LỖI Ở ĐÂY: đổi 'audio_file' thành 'file'
+                    formData.append('file', audioBlob, 'recording.webm');
+                    
+                    transcribe(formData);
+                };
+
+                recorder.start();
+                isRecording = true;
+                recordButton.innerHTML = '<i class="fas fa-stop"></i><span>Dừng Ghi âm</span>';
+                recordingStatus.innerHTML = '<span class="status-dot bg-red-500 mr-2"></span>Đang ghi âm...';
+            } catch (error) {
+                console.error("Lỗi khi truy cập micro:", error);
+                recordingStatus.textContent = 'Không thể truy cập micro.';
+            }
+        }
+
+        function stopRecording() {
+            if (recorder) {
+                recorder.stop();
                 isRecording = false;
-                recordBtn.textContent = 'Bắt đầu Ghi âm';
-                recordBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-                recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
-                recordStatus.textContent = "Nhấn để ghi âm";
-                stream.getTracks().forEach(track => track.stop());
-            });
-        }
-    });
-
-    analyzeBtn.addEventListener('click', handleGrammarCorrection);
-
-    exportBtn.addEventListener('click', () => {
-        const textToExport = correctedTextarea.value;
-        if (!textToExport) return;
-
-        const blob = new Blob([textToExport], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'corrected_text.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    // --- API Call Functions ---
-
-    async function handleAudio(file) {
-        transcribeLoader.classList.remove('hidden');
-        transcribedTextarea.value = '';
-        correctedTextarea.value = '';
-        exportBtn.classList.add('hidden');
-
-        const formData = new FormData();
-        formData.append('audio_file', file);
-
-        try {
-            const response = await fetch('/transcribe', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                transcribedTextarea.value = data.transcription;
-            } else {
-                alert('Lỗi: ' + data.error);
+                recordButton.innerHTML = '<i class="fas fa-microphone"></i><span>Bắt đầu Ghi âm</span>';
+                recordingStatus.textContent = '';
+                status.textContent = 'Đang xử lý bản ghi âm...';
             }
-        } catch (error) {
-            alert('Đã có lỗi xảy ra khi kết nối tới server.');
-            console.error(error);
-        } finally {
-            transcribeLoader.classList.add('hidden');
-        }
-    }
-
-    async function handleGrammarCorrection() {
-        const text = transcribedTextarea.value;
-        if (!text) {
-            alert('Vui lòng nhập văn bản hoặc transcribe từ audio trước.');
-            return;
         }
 
-        correctLoader.classList.remove('hidden');
-        correctedTextarea.value = '';
-        exportBtn.classList.add('hidden');
+        // Xử lý Tải file
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                const formData = new FormData();
 
-        try {
-            const response = await fetch('/correct_grammar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text })
-            });
-            const data = await response.json();
+                // SỬA LỖI Ở ĐÂY: đổi 'audio_file' thành 'file'
+                formData.append('file', file);
+                
+                status.textContent = 'Đang tải file lên và xử lý...';
+                transcribe(formData);
+            }
+        });
+        
+        // Gửi file audio đến backend
+        async function transcribe(formData) {
+            resultSection.classList.add('hidden');
+            analyzeButton.disabled = true;
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            if (response.ok) {
-                correctedTextarea.value = data.corrected_text;
-                if (data.corrected_text) {
-                    exportBtn.classList.remove('hidden');
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Lỗi không xác định từ server');
                 }
-            } else {
-                alert('Lỗi: ' + data.error);
-            }
-        } catch (error) {
-            alert('Đã có lỗi xảy ra khi kết nối tới server.');
-            console.error(error);
-        } finally {
-            correctLoader.classList.add('hidden');
-        }
-    }
-</script>
 
+                const data = await response.json();
+                transcribedText.value = data.text;
+                status.textContent = 'Chuyển đổi thành công!';
+                analyzeButton.disabled = false;
+
+            } catch (error) {
+                status.textContent = `Lỗi: ${error.message}`;
+                console.error('Lỗi:', error);
+            }
+        }
+
+        // Phân tích ngữ pháp
+        analyzeButton.addEventListener('click', async () => {
+            const textToAnalyze = transcribedText.value;
+            if (!textToAnalyze.trim()) {
+                alert("Vui lòng nhập văn bản để phân tích.");
+                return;
+            }
+            
+            status.textContent = 'Đang phân tích ngữ pháp...';
+            resultSection.classList.add('hidden');
+
+            try {
+                const response = await fetch('/correct-grammar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: textToAnalyze })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Lỗi không xác định từ server');
+                }
+
+                const data = await response.json();
+                correctedText.textContent = data.corrected_text;
+                resultSection.classList.remove('hidden');
+                status.textContent = 'Phân tích hoàn tất!';
+
+            } catch (error) {
+                status.textContent = `Lỗi: ${error.message}`;
+                console.error('Lỗi:', error);
+            }
+        });
+
+        // Xuất file .txt
+        exportButton.addEventListener('click', () => {
+            const textToExport = correctedText.textContent;
+            const blob = new Blob([textToExport], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'corrected_text.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
 </body>
 </html>
 

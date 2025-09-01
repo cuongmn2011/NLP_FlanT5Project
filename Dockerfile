@@ -4,6 +4,9 @@ FROM python:3.10-slim
 # Thiết lập thư mục làm việc bên trong container
 WORKDIR /app
 
+# Cập nhật danh sách package và cài đặt ffmpeg mà không cần hỏi
+RUN apt-get update && apt-get install -y ffmpeg
+
 # Sao chép file requirements.txt vào trước
 # Docker sẽ cache bước này, giúp build nhanh hơn nếu requirements không thay đổi
 COPY requirements.txt .

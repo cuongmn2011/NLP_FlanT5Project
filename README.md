@@ -80,7 +80,7 @@ openssl req \-x509 \-newkey rsa:4096 \-keyout certs/key.pem \-out certs/cert.pem
 
 Mở terminal ở thư mục gốc của dự án và chạy lệnh sau:
 
-docker-compose up \--build
+docker-compose up --build
 
 * \--build: Docker sẽ xây dựng lại các images dựa trên Dockerfile nếu có thay đổi.  
 * Lần đầu tiên chạy sẽ mất một lúc để tải base images và cài đặt các thư viện.
@@ -99,3 +99,6 @@ Vì chúng ta dùng chứng chỉ tự ký, trình duyệt sẽ hiển thị c�
 * **Frontend:** HTML, Tailwind CSS, JavaScript  
 * **AI Models:** OpenAI Whisper, Fine-tuned Flan-T5  
 * **Deployment:** Docker, Docker Compose, Nginx
+
+### **Lệnh tạo cert**
+openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj "//C=XX/ST=State/L=City/O=Organization/OU=OrgUnit/CN=localhost"
