@@ -1,0 +1,22 @@
+# --- Web Framework & Server ---
+# Để xây dựng API
+fastapi
+# Server để chạy ứng dụng FastAPI
+uvicorn[standard]
+# Cần thiết cho việc xử lý file upload (audio)
+python-multipart
+# Dùng để render template HTML
+Jinja2
+
+# --- AI & Machine Learning Core ---
+# Thư viện deep learning nền tảng
+torch
+# Thư viện của Hugging Face để tải và sử dụng các model
+transformers
+# Dependency cần thiết cho tokenizer của T5
+sentencepiece
+
+# --- Speech-to-Text ---
+# Thư viện Whisper của OpenAI để chuyển giọng nói thành văn bản
+openai-whisper
+

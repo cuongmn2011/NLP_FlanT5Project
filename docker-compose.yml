@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Service cho ứng dụng FastAPI
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grammar_app_fastapi
+    restart: unless-stopped
+    volumes:
+      # Mount thư mục model vào trong container để ứng dụng có thể đọc được
+      - ./model:/app/model
+    # Không cần expose port 8000 ra ngoài, vì Nginx sẽ giao tiếp nội bộ
+    networks:
+      - app-network
+
+  # Service cho Nginx Reverse Proxy
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: grammar_app_nginx
+    restart: unless-stopped
+    ports:
+      # Mở cổng 80 (HTTP) và 443 (HTTPS) ra bên ngoài
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Mount thư mục chứa chứng chỉ SSL vào trong container
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - app # Đảm bảo service app khởi động trước nginx
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
