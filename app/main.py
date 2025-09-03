@@ -1,12 +1,13 @@
 import os
 import torch
 import whisper
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import logging
+from text_processor import segment_text
 
 # --- Cấu hình logging ---
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# --- SỬA LỖI Ở ĐÂY ---
 # Đường dẫn tìm kiếm template bây giờ là "templates", tương đối so với thư mục làm việc /app
 templates = Jinja2Templates(directory="templates")
 
@@ -81,35 +81,49 @@ async def transcribe_audio(file: UploadFile = File(...)):
         logger.error(f"Lỗi trong quá trình chuyển đổi audio: {e}")
         return JSONResponse(status_code=500, content={"error": "Có lỗi xảy ra khi xử lý file audio."})
 
-@app.post("/correct-grammar")
-async def correct_grammar(request: Request):
+@app.post("/analyze")
+async def analyze_grammar(text: str = Form(...)):
     """
-    API nhận văn bản, sửa lỗi ngữ pháp bằng model đã fine-tune.
+    API nhận văn bản, tách câu, sau đó sửa lỗi cho từng câu.
     """
     if not grammar_model or not tokenizer:
         return JSONResponse(status_code=500, content={"error": "Mô hình sửa lỗi ngữ pháp chưa được tải."})
 
     try:
-        data = await request.json()
-        text = data.get("text", "")
-        if not text:
-            return JSONResponse(status_code=400, content={"error": "Không có văn bản nào để phân tích."})
+        logger.info(f"Bắt đầu phân tích văn bản: '{text[:100]}...'")
+        
+        # BƯỚC 1: Tách văn bản thành list các câu
+        sentences = segment_text(text)
+        logger.info(f"Đã tách thành {len(sentences)} câu.")
+        
+        analysis_results = []
+        
+        # BƯỚC 2: Lặp qua từng câu và sửa lỗi
+        for sentence in sentences:
+            if not sentence.strip():
+                continue
 
-        logger.info(f"Bắt đầu sửa lỗi cho văn bản: '{text[:50]}...'")
+            # Bạn có thể thêm prefix nếu model của bạn được huấn luyện với nó
+            # input_text = f"Correct this sentence: '{sentence}'"
+            input_text = sentence 
+            inputs = tokenizer(input_text, return_tensors="pt", max_length=128, truncation=True).to(device)
+            
+            output_ids = grammar_model.generate(
+                **inputs, 
+                max_length=128, 
+                num_beams=5, 
+                early_stopping=True
+            )
+            corrected_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+            
+            analysis_results.append({
+                "original": sentence,
+                "corrected": corrected_text
+            })
+            
+        logger.info(f"Phân tích hoàn tất.")
+        return JSONResponse(content={"results": analysis_results})
         
-        inputs = tokenizer(text, return_tensors="pt", max_length=128, truncation=True).to(device)
-        output_ids = grammar_model.generate(
-            **inputs, 
-            max_length=128, 
-            num_beams=5, 
-            early_stopping=True
-        )
-        corrected_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-        
-        logger.info(f"Sửa lỗi thành công. Kết quả: '{corrected_text[:50]}...'")
-        
-        return JSONResponse(content={"corrected_text": corrected_text})
     except Exception as e:
         logger.error(f"Lỗi trong quá trình sửa ngữ pháp: {e}")
         return JSONResponse(status_code=500, content={"error": "Có lỗi xảy ra khi phân tích ngữ pháp."})
-
