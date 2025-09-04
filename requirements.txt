@@ -20,3 +20,6 @@ sentencepiece
 # Thư viện Whisper của OpenAI để chuyển giọng nói thành văn bản
 openai-whisper
 
+# Thư viện xử lý văn bản
+spacy==3.7.2
+
