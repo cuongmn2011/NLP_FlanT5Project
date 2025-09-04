@@ -75,10 +75,6 @@ docker-compose.local.yml
 /model/*
 !model/.gitkeep
 
-# Thư mục chứa dataset lớn
-/dataset/*
-!dataset/.gitkeep
-
 # Thư mục chứa chứng chỉ SSL
 /certs/*
 !certs/.gitkeep
